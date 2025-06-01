@@ -3,6 +3,8 @@ import ExpenseList from './components/ExpenseList';
 import AddExpense from './components/AddExpense';
 import ExpenseChart from './components/ExpenseChart';
 import BulkUpload from './components/BulkUpload';
+import AISuggestions from './components/AISuggestions';
+
 
 import axios from 'axios';
 
@@ -28,7 +30,7 @@ function App() {
      <AddExpense fetchExpenses={fetchExpenses} />
 <ExpenseList expenses={expenses} fetchExpenses={fetchExpenses} />
 <ExpenseChart expenses={expenses} />
-
+  <AISuggestions />
 <BulkUpload fetchExpenses={fetchExpenses} />
     </div>
   );

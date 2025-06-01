@@ -4,7 +4,12 @@ const Expense = require('../models/Expense');
 const multer = require('multer');
 const XLSX = require('xlsx');
 const upload = multer({ dest: 'uploads/' });
+const axios = require('axios');
+const cors = require('cors');
+const app = express();
 
+
+app.use(cors()); 
 // Add new expense
 router.post('/', async (req, res) => {
   try {
@@ -103,6 +108,43 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Bulk upload error:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+require('dotenv').config(); // Add this at the top if not already
+
+router.post('/suggestions', async (req, res) => {
+  try {
+    const expenses = await Expense.find().sort({ date: -1 }).limit(30);
+
+    const prompt = `
+      Here are my recent cafe expenses:
+      ${expenses.map(e => `Date: ${e.date.toISOString().slice(0,10)}, Revenue: ${e.revenue}, Expenses: ${e.expenses}, Reason: ${e.reason}`).join('\n')}
+      Please analyze these and suggest practical tips to reduce expenses.
+    `;
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 200,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    const suggestions = response.data.choices[0].message.content;
+    res.json({ suggestions });
+  } catch (error) {
+    if (error.response && error.response.status === 429) {
+      res.status(429).json({ message: 'AI suggestion limit reached. Please try again later.' });
+    } else {
+      res.status(500).json({ message: error.message });
+    }
   }
 });
 module.exports = router;
